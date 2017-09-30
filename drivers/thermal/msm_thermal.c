@@ -30,7 +30,7 @@
 #include <linux/of.h>
 #include <linux/sysfs.h>
 #include <linux/types.h>
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
+#ifndef CONFIG_RTC_INTF_ALARM
 #include <linux/alarmtimer.h>
 #else
 #include <linux/android_alarm.h>
@@ -1036,7 +1036,7 @@ static void thermal_rtc_setup(void)
 {
 	ktime_t wakeup_time;
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
+#ifndef CONFIG_RTC_INTF_ALARM
 	wakeup_time = ns_to_ktime((u64)wakeup_ms * NSEC_PER_MSEC);
 	alarm_start_relative(&thermal_rtc, wakeup_time);
 	pr_debug("%s: Alarm set to last for %ld.%06ld sec\n",
@@ -1065,7 +1065,7 @@ static void timer_work_fn(struct work_struct *work)
 	sysfs_notify(tt_kobj, NULL, "wakeup_ms");
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
+#ifndef CONFIG_RTC_INTF_ALARM
 static enum alarmtimer_restart thermal_rtc_callback(struct alarm *al,
 	ktime_t now)
 {
@@ -2302,7 +2302,7 @@ int __init msm_thermal_late_init(void)
 		msm_thermal_add_cc_nodes();
 	msm_thermal_add_psm_nodes();
 	msm_thermal_add_vdd_rstr_nodes();
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
+#ifndef CONFIG_RTC_INTF_ALARM
 	alarm_init(&thermal_rtc, ALARM_BOOTTIME, thermal_rtc_callback);
 #else
 	alarm_init(&thermal_rtc, ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
