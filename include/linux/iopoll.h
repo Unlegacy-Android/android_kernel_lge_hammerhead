@@ -36,18 +36,21 @@
  */
 #define readl_poll_timeout(addr, val, cond, sleep_us, timeout_us) \
 ({ \
-	unsigned long timeout = jiffies + usecs_to_jiffies(timeout_us); \
-	might_sleep_if(timeout_us); \
+	u64 __timeout_us = (timeout_us); \
+	unsigned long __sleep_us = (sleep_us); \
+	unsigned long __timeout = jiffies + usecs_to_jiffies(__timeout_us); \
+	might_sleep_if((__timeout_us) != 0); \
 	for (;;) { \
 		(val) = readl(addr); \
 		if (cond) \
 			break; \
-		if (timeout_us && time_after(jiffies, timeout)) { \
+		if (__timeout_us && \
+		    time_after(jiffies, __timeout)) { \
 			(val) = readl(addr); \
 			break; \
 		} \
-		if (sleep_us) \
-			usleep_range(DIV_ROUND_UP(sleep_us, 4), sleep_us); \
+		if (__sleep_us) \
+			usleep_range(DIV_ROUND_UP(__sleep_us, 4), __sleep_us); \
 	} \
 	(cond) ? 0 : -ETIMEDOUT; \
 })
@@ -65,11 +68,12 @@
 #define readl_poll_timeout_noirq(addr, val, cond, max_reads, time_between_us) \
 ({ \
 	int count; \
+	unsigned long __delay_us = (time_between_us); \
 	for (count = (max_reads); count > 0; count--) { \
 		(val) = readl(addr); \
 		if (cond) \
 			break; \
-		udelay(time_between_us); \
+		udelay(__delay_us); \
 	} \
 	(cond) ? 0 : -ETIMEDOUT; \
 })
