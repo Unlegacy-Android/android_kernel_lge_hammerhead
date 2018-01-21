@@ -2171,9 +2171,21 @@ int copy_mount_options(const void __user * data, unsigned long *where)
 	return 0;
 }
 
-char *copy_mount_string(const void __user *data)
+int copy_mount_string(const void __user *data, char **where)
 {
-	return data ? strndup_user(data, PAGE_SIZE) : NULL;
+	char *tmp;
+
+	if (!data) {
+		*where = NULL;
+		return 0;
+	}
+
+	tmp = strndup_user(data, PAGE_SIZE);
+	if (IS_ERR(tmp))
+		return PTR_ERR(tmp);
+
+	*where = tmp;
+	return 0;
 }
 
 /*
@@ -2439,9 +2451,8 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 	char *kernel_dev;
 	unsigned long data_page;
 
-	kernel_type = copy_mount_string(type);
-	ret = PTR_ERR(kernel_type);
-	if (IS_ERR(kernel_type))
+	ret = copy_mount_string(type, &kernel_type);
+	if (ret < 0)
 		goto out_type;
 
 	kernel_dir = getname(dir_name);
@@ -2450,9 +2461,8 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 		goto out_dir;
 	}
 
-	kernel_dev = copy_mount_string(dev_name);
-	ret = PTR_ERR(kernel_dev);
-	if (IS_ERR(kernel_dev))
+	ret = copy_mount_string(dev_name, &kernel_dev);
+	if (ret < 0)
 		goto out_dev;
 
 	ret = copy_mount_options(data, &data_page);
